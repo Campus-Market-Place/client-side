@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink, Instagram, Facebook, Calendar, Users, Flag } from "lucide-react";
-import { shops, products } from "../data/mockData";
+import { shops, products, Shop, Product } from "../data/mockData";
 import { ProductCard } from "../components/ProductCard";
 import { EmptyState } from "../components/EmptyState";
 import { ReportShopModal } from "../components/ReportShopModal";
 import { useAppContext } from "../contexts/AppContext";
+import React from "react";
+import { getShopById } from "../services/shopsApi";
 
 interface ShopDetailPageProps {
   shopId: string;
@@ -19,9 +21,39 @@ export function ShopDetailPage({
 }: ShopDetailPageProps) {
   const { isFollowing, toggleFollowShop } = useAppContext();
   const [showReportModal, setShowReportModal] = useState(false);
+  const [shop, setShop] = useState<Shop | null>(null);
+  const [shopProducts, setShopProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const shop = shops.find((s) => s.id === shopId);
-  const shopProducts = products.filter((p) => p.shopId === shopId);
+  useEffect(() => { //fetch shop details and products when shopId changes
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      console.log("Fetching shop data for shopId:", shopId);
+  
+      try {
+        const shopData = await getShopById(shopId);  // <-- fetch shop from API
+        if (!shopData) throw new Error("Shop not found");
+        setShop(shopData);
+  
+        const productsData = await getProductsByShopId(shopId); // <-- fetch products from API
+        setShopProducts(productsData);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load shop data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchData();
+  }, [shopId]);
+
+  if (loading) return <div className="p-4">Loading shop...</div>;
+  if (error) return <div className="p-4 text-red-500">{error}</div>;
+  if (!shop) return <div className="p-4">Shop not found</div>;
+
 
   if (!shop) return null;
 
@@ -166,4 +198,11 @@ export function ShopDetailPage({
       )}
     </div>
   );
+}
+
+function getProductsByShopId(shopId: string): Promise<Product[]> { //mock API function to get products by shop ID
+  return new Promise((resolve) => {
+    const productsData = products.filter((product) => product.shopId === shopId);
+    resolve(productsData);
+  });
 }
