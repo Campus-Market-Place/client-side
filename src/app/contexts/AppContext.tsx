@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { saveProduct, unsaveProduct } from "../services/savedApi";
 
 interface AppContextType {
   savedProducts: Set<string>;
@@ -30,14 +31,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("followedShops", JSON.stringify(Array.from(followedShops)));
   }, [followedShops]);
 
-  const toggleSavedProduct = (productId: string) => {
+  const toggleSavedProduct = async (productId: string) => {
     setSavedProducts((prev) => {
       const next = new Set(prev);
+  
       if (next.has(productId)) {
+        unsaveProduct(productId);   // API call
         next.delete(productId);
       } else {
+        saveProduct(productId);     // API call
         next.add(productId);
       }
+  
       return next;
     });
   };
