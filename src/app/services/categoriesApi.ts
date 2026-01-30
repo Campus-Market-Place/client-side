@@ -1,13 +1,26 @@
-// src/app/services/categoriesApi.ts
+  // src/app/services/categoriesApi.ts
 import { categories } from "../data/mockData";
 
 // simulate network delay
-function wait(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-// "GET /api/categories"
-export async function getCategories() {
-  await wait(300); // simulate 300ms network delay
-  return categories; // categories imported from mockData
-}
+// Get all categories
+export const getCategories = async () => {
+  await wait(200);
+  return categories;
+};
+
+// Get category by ID
+export const getCategoryById = async (id: string) => {
+  await wait(200);
+  return categories.find(c => c.id === id);
+};
+
+
+
+
+
+//export async function getCategories() {
+  //  const response = await fetch(`${API_BASE_URL}/categories`);
+   // return response.json();
+  //}

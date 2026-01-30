@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { ArrowLeft, SlidersHorizontal } from "lucide-react";
-import { products, categories } from "../data/mockData";
+import { products, categories, Product } from "../data/mockData";
 import { ProductCard } from "../components/ProductCard";
 import { EmptyState } from "../components/EmptyState";
+import React from "react";
+import { getProducts } from "../services/productsApi";
 
 interface CategoryProductsPageProps {
   categoryId: string;
@@ -19,13 +21,21 @@ export function CategoryProductsPage({
   const [showFilters, setShowFilters] = useState(false);
 
   const category = categories.find((c) => c.id === categoryId);
-  const categoryProducts = products.filter((p) => p.categoryId === categoryId);
-
-  const sortedProducts = [...categoryProducts].sort((a, b) => {
+  const [productsList, setProductsList] = useState<Product[]>([]);
+  //const categoryProducts = products.filter((p) => p.categoryId === categoryId);
+  
+  const sortedProducts = [...productsList].sort((a, b) => { 
     if (sortBy === "price-low") return a.price - b.price;
     if (sortBy === "price-high") return b.price - a.price;
     return 0; // newest
   });
+
+  React.useEffect(() => {
+    getProducts(categoryId).then((data) => {
+      setProductsList(data);
+      console.log("Products fetched:", data);
+    });
+  }, [categoryId]);
 
   return (
     <div className="min-h-screen bg-gray-50">

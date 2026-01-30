@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { SlidersHorizontal } from 'lucide-react';
 import { Header } from '../components/Header';
 import { ProductCard } from '../components/ProductCard';
-import { getProductsByCategory, getCategoryById } from '../data/mockData';
+//import { getProductsByCategory, getCategoryById } from '../data/mockData';
 import { Button } from '../components/ui/button';
 import {
   DropdownMenu,
@@ -11,13 +11,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
+import React from 'react';
+import { getCategoryById } from '../services/categoriesApi';
+import { Category, Product } from '../data/mockData';
+import { getProducts } from '../services/productsApi';
 
 export function ProductListPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
   const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high'>('newest');
   
-  const category = categoryId ? getCategoryById(categoryId) : null;
-  const allProducts = categoryId ? getProductsByCategory(categoryId) : [];
+  const [category, setCategory] = useState<Category | null>(null);  // State to hold category details
+  const [allProducts, setAllProducts] = useState<Product[]>([]);  //state to hold products in the category
+  const [productsList, setProductsList] = useState<Product[]>([]);
+  
+  useEffect(() => {
+    getProducts(categoryId).then(setProductsList);
+  }, [categoryId]);
 
   const sortedProducts = [...allProducts].sort((a, b) => {
     if (sortBy === 'price-low') return a.price - b.price;
@@ -61,8 +70,8 @@ export function ProductListPage() {
       <main className="p-4">
         {sortedProducts.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
-            {sortedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {productsList.map((product) => (
+              <ProductCard key={product.id} product={product} onClick={() => console.log(`Product clicked: ${product.id}`)} />
             ))}
           </div>
         ) : (
