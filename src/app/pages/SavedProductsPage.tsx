@@ -3,6 +3,7 @@ import { products } from "../data/mockData";
 import { ProductCard } from "../components/ProductCard";
 import { EmptyState } from "../components/EmptyState";
 import { useAppContext } from "../contexts/AppContext";
+import React from "react";
 
 interface SavedProductsPageProps {
   onBack: () => void;

@@ -12,6 +12,8 @@ interface CategoryProductsPageProps {
   onProductSelect: (productId: string) => void;
 }
 
+
+
 export function CategoryProductsPage({
   categoryId,
   onBack,
@@ -23,19 +25,21 @@ export function CategoryProductsPage({
   const category = categories.find((c) => c.id === categoryId);
   const [productsList, setProductsList] = useState<Product[]>([]);
   //const categoryProducts = products.filter((p) => p.categoryId === categoryId);
-  
-  const sortedProducts = [...productsList].sort((a, b) => { 
+
+  const sortedProducts = [...productsList].sort((a, b) => { //sort products based on sortBy state
     if (sortBy === "price-low") return a.price - b.price;
     if (sortBy === "price-high") return b.price - a.price;
     return 0; // newest
   });
 
-  React.useEffect(() => {
+  React.useEffect(() => {  //fetch products when categoryId changes
     getProducts(categoryId).then((data) => {
       setProductsList(data);
       console.log("Products fetched:", data);
     });
   }, [categoryId]);
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">

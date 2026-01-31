@@ -7,6 +7,7 @@ import { WriteReviewPage } from "./pages/WriteReviewPage";
 import { SavedProductsPage } from "./pages/SavedProductsPage";
 import { SearchResultsPage } from "./pages/SearchResultsPage";
 import { AppProvider } from "./contexts/AppContext";
+import React from "react";
 
 type Page =
   | { type: "home" }
