@@ -5,6 +5,7 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 interface ProductCardProps {
   product: Product;
   onClick: () => void;
+  onSave?: () => void; 
 }
 
 export function ProductCard({ product, onClick }: ProductCardProps) {

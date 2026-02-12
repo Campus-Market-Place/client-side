@@ -4,19 +4,42 @@ import { ProductCard } from "../components/ProductCard";
 import { EmptyState } from "../components/EmptyState";
 import { useAppContext } from "../contexts/AppContext";
 import React from "react";
+import { saveProduct, unsaveProduct } from "../services/savedApi";
 
 interface SavedProductsPageProps {
   onBack: () => void;
   onProductSelect: (productId: string) => void;
+  //onSave?: () => void; // 
 }
 
 export function SavedProductsPage({
   onBack,
   onProductSelect,
 }: SavedProductsPageProps) {
-  const { savedProducts } = useAppContext();
+  const { savedProducts, toggleSavedProduct } = useAppContext();
 
+  // Filter products that are saved
   const savedProductsList = products.filter((p) => savedProducts.has(p.id));
+
+  // Handle save/unsave
+  const handleSaveProduct = async (productId: string, shopId: string) => {
+    try {
+      if (savedProducts.has(productId)) {
+        await unsaveProduct(productId);
+      } else {
+        await saveProduct(productId, shopId);
+      }
+
+      // Update local state
+      toggleSavedProduct(productId);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error saving/unsaving product:", err.message);
+      } else {
+        console.error("Error saving/unsaving product:", err);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -51,6 +74,8 @@ export function SavedProductsPage({
                   key={product.id}
                   product={product}
                   onClick={() => onProductSelect(product.id)}
+                  // Pass save/unsave handler to the card
+                  onSave={() => handleSaveProduct(product.id, product.shopId)}
                 />
               ))}
             </div>

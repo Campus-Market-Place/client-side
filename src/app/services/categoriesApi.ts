@@ -1,26 +1,17 @@
-  // src/app/services/categoriesApi.ts
-import { categories } from "../data/mockData";
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL;
 
-// simulate network delay
-const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
+export async function getCategories() {
+  const response = await fetch(`${API_BASE_URL}/categories`);
+  if (!response.ok) throw new Error("Failed to fetch categories");
 
-// Get all categories
-export const getCategories = async () => {
-  await wait(200);
-  return categories;
-};
+  const result = await response.json();
+  return result.data.categories; 
+}
 
-// Get category by ID
-export const getCategoryById = async (id: string) => {
-  await wait(200);
-  return categories.find(c => c.id === id);
-};
+export async function getCategoryById(id: string) {
+  const response = await fetch(`${API_BASE_URL}/categories/${id}`);
+  if (!response.ok) throw new Error("Failed to fetch category");
 
-
-
-
-
-//export async function getCategories() {
-  //  const response = await fetch(`${API_BASE_URL}/categories`);
-   // return response.json();
-  //}
+  const result = await response.json();
+  return result.data.categories; // unwrap the array correctly
+}

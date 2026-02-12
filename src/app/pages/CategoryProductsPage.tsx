@@ -4,7 +4,7 @@ import { products, categories, Product } from "../data/mockData";
 import { ProductCard } from "../components/ProductCard";
 import { EmptyState } from "../components/EmptyState";
 import React from "react";
-import { getProducts } from "../services/productsApi";
+import { getProductsByCategory } from "../services/productsApi";
 
 interface CategoryProductsPageProps {
   categoryId: string;
@@ -32,14 +32,16 @@ export function CategoryProductsPage({
     return 0; // newest
   });
 
-  React.useEffect(() => {  //fetch products when categoryId changes
-    getProducts(categoryId).then((data) => {
-      setProductsList(data);
-      console.log("Products fetched:", data);
-    });
+
+  React.useEffect(() => {
+    getProductsByCategory(categoryId)
+      .then((data) => {
+        setProductsList(data);
+      })
+      .catch((err) => {
+        console.error("Error fetching products:", err);
+      });
   }, [categoryId]);
-
-
 
   return (
     <div className="min-h-screen bg-gray-50">

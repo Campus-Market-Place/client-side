@@ -1,20 +1,50 @@
-// src/app/services/savedApi.ts
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL;
+const TOKEN = (import.meta as any).env.VITE_USER_TOKEN;
 
-// simulate network delay
-function wait(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+export async function saveProduct(productId: string, shopId: string) {
+  const response = await fetch(`${API_BASE_URL}/save_product/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${TOKEN}`,
+    },
+    body: JSON.stringify({ productId, shopId }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to save product");
   }
-  
-  // POST /api/saveProduct
-  export async function saveProduct(productId: string) {
-    await wait(200);
-    console.log("API: saved product", productId);
-    return { success: true };
+
+  return response.json();
+}
+
+export async function getSavedProducts() {
+  const response = await fetch(`${API_BASE_URL}/save_product/`, {
+    headers: {
+      "Authorization": `Bearer ${TOKEN}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch saved products");
   }
-  
-  // DELETE /api/unsaveProduct
-  export async function unsaveProduct(productId: string) {
-    await wait(200);
-    console.log("API: unsaved product", productId);
-    return { success: true };
+
+  return response.json(); // array of saved products
+}
+
+export async function unsaveProduct(productId: string) {
+  const response = await fetch(`${API_BASE_URL}/save_product/`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${TOKEN}`,
+    },
+    body: JSON.stringify({ productId }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to unsave product");
   }
+
+  return response.json();
+}

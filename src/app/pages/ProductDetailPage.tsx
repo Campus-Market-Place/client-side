@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Bookmark, ExternalLink, Star } from "lucide-react";
-import { products, reviews, shops } from "../data/mockData";
 import { StarRating } from "../components/StarRating";
 import { ReviewCard } from "../components/ReviewCard";
 import Slider from "react-slick";
@@ -8,7 +7,9 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAppContext } from "../contexts/AppContext";
+import { getProductDetails } from "../services/productsApi";
 import React from "react";
+
 
 interface ProductDetailPageProps {
   productId: string;
@@ -23,13 +24,36 @@ export function ProductDetailPage({
   onViewShop,
   onWriteReview,
 }: ProductDetailPageProps) {
-  const { isSaved, toggleSavedProduct, isFollowing, toggleFollowShop } = useAppContext();
+  const { isSaved, toggleSavedProduct, isFollowing, toggleFollowShop } =
+    useAppContext();
 
-  const product = products.find((p) => p.id === productId);
-  const shop = shops.find((s) => s.id === product?.shopId);
-  const productReviews = reviews.filter((r) => r.productId === productId);
+  const [product, setProduct] = useState<any | null>(null);
+  const [shop, setShop] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!product || !shop) return null;
+  useEffect(() => {
+    setLoading(true);
+  
+    getProductDetails(productId)
+      .then((fetchedProduct) => {
+        console.log("Fetched product:", fetchedProduct);
+  
+        setProduct(fetchedProduct);
+        setShop(fetchedProduct.shop); // now this works
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching product details:", err);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [productId]);
+  
+
+  if (loading) return <div>Loading product...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!product || !shop) return <div>Product not found</div>;
 
   const sliderSettings = {
     dots: true,
@@ -41,7 +65,9 @@ export function ProductDetailPage({
   };
 
   const handleContactSeller = () => {
-    window.open(shop.telegramLink, "_blank");
+    if (shop?.seller?.user?.telegramId) {
+      window.open(`https://t.me/${shop.seller.user.telegramId}`, "_blank");
+    }
   };
 
   const handleSaveProduct = () => {
@@ -61,22 +87,30 @@ export function ProductDetailPage({
             className="p-1 hover:bg-gray-100 rounded-lg"
           >
             <Bookmark
-              className={`w-5 h-5 ${isSaved(productId) ? "fill-blue-600 text-blue-600" : ""}`}
+              className={`w-5 h-5 ${
+                isSaved(productId) ? "fill-blue-600 text-blue-600" : ""
+              }`}
             />
           </button>
         </div>
       </div>
 
-      {/* Product Images Carousel */}
+      {/* Product Images */}
       <div className="bg-white">
         <Slider {...sliderSettings}>
-          {[product.image, product.image, product.image].map((img, index) => (
+          {product.images?.map((img: any, index: number) => (
             <div key={index} className="aspect-square bg-gray-100">
               <ImageWithFallback
-                src={img}
-                alt={product.name}
-                className="w-full h-full object-cover"
+                  src={
+                    product.images?.[0]?.imagePath
+                      ? `https://via.placeholder.com/400x400.png?text=Product+Image`
+                      : "/placeholder-image.png"
+                  }
+                  alt={product.name}
+                  className="w-full h-full object-cover"
               />
+
+
             </div>
           ))}
         </Slider>
@@ -90,21 +124,25 @@ export function ProductDetailPage({
         </div>
 
         <div className="flex items-center gap-2 mb-3">
-          <StarRating rating={product.rating} />
+          <StarRating rating={product.ratingAverage} />
           <span className="text-sm text-gray-600">
-            {product.rating} ({product.reviewCount} reviews)
+            {product.ratingAverage} ({product.ratingCount} reviews)
           </span>
         </div>
 
-        <p className="text-gray-700 text-sm leading-relaxed">{product.description}</p>
+        <p className="text-gray-700 text-sm leading-relaxed">
+          {product.description}
+        </p>
       </div>
 
       {/* Shop Section */}
       <div className="bg-white mt-2 p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex-1">
-            <h3 className="mb-1">{shop.name}</h3>
-            <p className="text-sm text-gray-500">{shop.followers} followers</p>
+            <h3 className="mb-1">{shop.shopName}</h3>
+            <p className="text-sm text-gray-500">
+              {shop.followersCount} followers
+            </p>
           </div>
           <button
             onClick={() => toggleFollowShop(shop.id)}
@@ -128,7 +166,7 @@ export function ProductDetailPage({
       {/* Reviews Section */}
       <div className="bg-white mt-2 p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3>Reviews ({productReviews.length})</h3>
+          <h3>Reviews ({product.ratingCount})</h3>
           <button
             onClick={() => onWriteReview(productId)}
             className="text-sm text-blue-600 hover:underline"
@@ -137,7 +175,7 @@ export function ProductDetailPage({
           </button>
         </div>
 
-        {productReviews.length === 0 ? (
+        {product.reviews?.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Star className="w-8 h-8 mx-auto mb-2 text-gray-300" />
             <p className="text-sm">No reviews yet</p>
@@ -145,14 +183,14 @@ export function ProductDetailPage({
           </div>
         ) : (
           <div className="space-y-3">
-            {productReviews.map((review) => (
-              <ReviewCard key={review.id} review={review} />
+            {product.reviews?.map((review: any, index: number) => (
+              <ReviewCard key={index} review={review} />
             ))}
           </div>
         )}
       </div>
 
-      {/* Bottom Action Button */}
+      {/* Bottom Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
         <button
           onClick={handleContactSeller}

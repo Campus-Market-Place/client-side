@@ -15,6 +15,8 @@ interface HomePageProps {    //tyscript interface for the props that HomePage co
 export function HomePage({ onCategorySelect, onSearch, onViewSaved }: HomePageProps) {
   const { savedProducts } = useAppContext();
   const [categoriesList, setCategoriesList] = React.useState<Category[]>([]);
+
+  // Removed redundant redeclaration of categoriesList
   
   const handleSearch = (query: string) => {
     if (query.trim()) {
@@ -23,13 +25,14 @@ export function HomePage({ onCategorySelect, onSearch, onViewSaved }: HomePagePr
   };
 
   React.useEffect(() => {
-    getCategories().then((data) => {
-      setCategoriesList(data);
+  getCategories()
+    .then((data) => {
+      setCategoriesList(data); // data must be an array here
       console.log("Categories fetched:", data);
-    });
-    
-  }, []);
-  
+    })
+    .catch(err => console.error(err)); // always good to handle errors
+}, []);
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -59,6 +62,7 @@ export function HomePage({ onCategorySelect, onSearch, onViewSaved }: HomePagePr
       <div className="p-4">
         <h2 className="mb-4">Browse by Category</h2>
         <div className="grid grid-cols-2 gap-3">
+        
           {categoriesList.map((category) => (
             <CategoryCard
               key={category.id}
