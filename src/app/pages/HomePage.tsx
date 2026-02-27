@@ -1,10 +1,10 @@
 import { Bookmark } from "lucide-react";
-import { categories, Category } from "../data/mockData";
 import { CategoryCard } from "../components/CategoryCard";
 import { SearchBar } from "../components/SearchBar";
 import { useAppContext } from "../contexts/AppContext";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { getCategories } from "../services/categoriesApi";
+import { Category } from "../../types/api";
 
 interface HomePageProps {
   onCategorySelect: (categoryId: string) => void;
@@ -13,24 +13,38 @@ interface HomePageProps {
 }
 
 export function HomePage({ onCategorySelect, onSearch, onViewSaved }: HomePageProps) {
-  const { savedProducts} = useAppContext();
-  const [categoriesList, setCategoriesList] = React.useState<Category[]>([]);
+  const { savedProducts } = useAppContext();
+
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSearch = (query: string) => {
-    if (query.trim()) {
-      onSearch(query);
-    }
+    if (query.trim()) onSearch(query);
   };
 
+  // Auto-fetch categories on mount
   useEffect(() => {
-    getCategories()
-      .then((data) => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getCategories();
         setCategoriesList(data);
-        console.log("Categories fetched:", data);
-      })
-      .catch((err) => console.error(err));
-  }, []);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch categories. Please reload the page.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchCategories();
+
+    // Optional: auto-refresh every 60 seconds
+    const interval = setInterval(fetchCategories, 60000); // 1 minute
+    return () => clearInterval(interval); // cleanup
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -42,7 +56,7 @@ export function HomePage({ onCategorySelect, onSearch, onViewSaved }: HomePagePr
 
             {/* Bookmark badge */}
             <button
-              onClick={onViewSaved} // keeps existing behavior to view saved products
+              onClick={onViewSaved}
               className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
               title="Saved products"
             >
@@ -61,17 +75,26 @@ export function HomePage({ onCategorySelect, onSearch, onViewSaved }: HomePagePr
       {/* Categories Grid */}
       <div className="p-4">
         <h2 className="mb-4">Browse by Category</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {categoriesList.map((category) => (
-            <CategoryCard
-              key={category.id}
-              category={category}
-              onClick={() => onCategorySelect(category.id)}
-              // Optionally, you can add a toggle bookmark inside each category card
-              // e.g., onBookmarkClick={() => handleBookmarkClick(category.id, category.shopId)}
-            />
-          ))}
-        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-600 py-10">{error}</div>
+        ) : categoriesList.length === 0 ? (
+          <div className="text-center py-10">No categories found.</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {categoriesList.map((category) => (
+              <CategoryCard
+                key={category.id}
+                category={category}
+                onClick={() => onCategorySelect(category.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Info Section */}

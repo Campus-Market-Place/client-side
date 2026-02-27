@@ -9,6 +9,7 @@ export interface Product {
   description: string;
   rating: number;
   reviewCount: number;
+  ratingAverage?: number; // optional, can be calculated from rating and reviewCount
 }
 
 export interface Shop {

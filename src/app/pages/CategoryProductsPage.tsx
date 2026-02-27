@@ -1,18 +1,16 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, SlidersHorizontal } from "lucide-react";
-import { products, categories, Product } from "../data/mockData";
+//import { Product } from "../types"; // your type definitions
 import { ProductCard } from "../components/ProductCard";
 import { EmptyState } from "../components/EmptyState";
-import React from "react";
 import { getProductsByCategory } from "../services/productsApi";
+import { Product, ProductCardProduct } from "../../types/api";
 
 interface CategoryProductsPageProps {
   categoryId: string;
   onBack: () => void;
   onProductSelect: (productId: string) => void;
 }
-
-
 
 export function CategoryProductsPage({
   categoryId,
@@ -21,35 +19,38 @@ export function CategoryProductsPage({
 }: CategoryProductsPageProps) {
   const [sortBy, setSortBy] = useState<"newest" | "price-low" | "price-high">("newest");
   const [showFilters, setShowFilters] = useState(false);
+  const [productsList, setProductsList] = useState<ProductCardProduct[]>([]);
+  const [categoryName, setCategoryName] = useState<string>("");
 
-  const category = categories.find((c) => c.id === categoryId);
-  const [productsList, setProductsList] = useState<Product[]>([]);
-  //const categoryProducts = products.filter((p) => p.categoryId === categoryId);
-
-  
-
-  const sortedProducts = [...productsList].sort((a, b) => { //sort products based on sortBy state
-    if (sortBy === "price-low") return a.price - b.price;
-    if (sortBy === "price-high") return b.price - a.price;
-    return 0; // newest
-  });
-
-
-  React.useEffect(() => {
+  // Fetch products for this category
+ 
+  useEffect(() => {
     getProductsByCategory(categoryId)
-      .then((data) => {
-        const mapped = data.map((p: any) => ({
-          ...p,
-          image: p.images?.[0]?.imagePath || "",  // ✅ map first image
-          shopId: p.shop?.id || p.shopId || p.shop_id, // ✅ make sure shopId exists
+      .then((data: any[]) => {
+        const mapped: ProductCardProduct[] = data.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          image: p.images?.[0]?.imagePath || "",
+          shopId: p.shop?.id || p.shopId || "",
+          shopName: p.shop?.shopName || "Unknown",
+          description: p.description || "",
+          rating: p.ratingAverage || 0,       // for display in ProductCard
+          reviewCount: p.reviewCount || 0,
+          ratingAverage: p.ratingAverage || 0, // ⚠ include this to satisfy type
         }));
         setProductsList(mapped);
+  
+        if (data[0]?.category?.name) setCategoryName(data[0].category.name);
       })
-      .catch((err) => {
-        console.error("Error fetching products:", err);
-      });
+      .catch((err) => console.error("Error fetching products:", err));
   }, [categoryId]);
-
+  // Sorting
+  const sortedProducts = [...productsList].sort((a, b) => {
+    if (sortBy === "price-low") return a.price - b.price;
+    if (sortBy === "price-high") return b.price - a.price;
+    return 0; // newest or default
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -61,7 +62,7 @@ export function CategoryProductsPage({
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-lg">{category?.name}</h1>
+              <h1 className="text-lg">{categoryName || "Category"}</h1>
               <p className="text-sm text-gray-500">{sortedProducts.length} products</p>
             </div>
           </div>
