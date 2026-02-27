@@ -1,5 +1,4 @@
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL;
-const TOKEN = (import.meta as any).env.VITE_USER_TOKEN;
+import { apiFetch } from "./clientApi";
 
 export interface ToggleFollowResponse {
   success: boolean;
@@ -8,40 +7,12 @@ export interface ToggleFollowResponse {
   message?: string;
 }
 
-export async function toggleFollowShopApi(
-  shopId: string
-): Promise<ToggleFollowResponse> {
-  const response = await fetch(`${API_BASE_URL}/follow/${shopId}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${TOKEN}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Failed to follow/unfollow shop");
-  }
-
-  return result;
+export async function toggleFollowShopApi(shopId: string) {
+  const result = await apiFetch(`/follow/${shopId}`, { method: "POST" });
+  return result as ToggleFollowResponse;
 }
 
-// Get followers count
 export async function getShopFollowers(shopId: string) {
-  const response = await fetch(`${API_BASE_URL}/follow/${shopId}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${TOKEN}`,
-    },
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Failed to fetch followers");
-  }
-
+  const result = await apiFetch(`/follow/${shopId}`);
   return result;
 }
