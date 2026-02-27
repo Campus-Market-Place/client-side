@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HomePage } from "./pages/HomePage";
 import { CategoryProductsPage } from "./pages/CategoryProductsPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
@@ -8,6 +8,7 @@ import { SavedProductsPage } from "./pages/SavedProductsPage";
 import { SearchResultsPage } from "./pages/SearchResultsPage";
 import { AppProvider } from "./contexts/AppContext";
 import React from "react";
+import { saveTokenFromUrl } from "./utils/auth";
 
 type Page =
   | { type: "home" }
@@ -19,6 +20,12 @@ type Page =
   | { type: "search"; query: string };
 
 export default function App() {
+
+    // ✅ Read token from URL when app loads
+    useEffect(() => {
+      saveTokenFromUrl();
+    }, []);
+    
   const [currentPage, setCurrentPage] = useState<Page>({ type: "home" });
   const [pageHistory, setPageHistory] = useState<Page[]>([{ type: "home" }]);
 
