@@ -1,73 +1,46 @@
 import { Star } from "lucide-react";
+import React from "react";
 
 interface StarRatingProps {
   rating: number;
-  totalStars?: number;
   interactive?: boolean;
   onRatingChange?: (rating: number) => void;
-  size?: "sm" | "md" | "lg";
+  size?: number | "sm" | "md" | "lg"; // allow string sizes
+  maxRating?: number;
 }
 
 export function StarRating({
   rating,
-  totalStars = 5,
   interactive = false,
   onRatingChange,
   size = "md",
+  maxRating = 5,
 }: StarRatingProps) {
-  const sizeClasses = {
-    sm: "w-3 h-3",
-    md: "w-4 h-4",
-    lg: "w-6 h-6",
-  };
+  // Map string sizes to actual pixel values
+  const pixelSize =
+    typeof size === "number"
+      ? size
+      : size === "sm"
+      ? 16
+      : size === "md"
+      ? 20
+      : 24; // lg
 
   const handleClick = (index: number) => {
-    if (interactive && onRatingChange) {
-      onRatingChange(index + 1);
-    }
+    if (!interactive || !onRatingChange) return;
+    onRatingChange(index + 1);
   };
 
   return (
-    <div className="flex gap-0.5">
-      {Array.from({ length: totalStars }).map((_, index) => {
-        const isFilled = index < Math.floor(rating);
-        const isHalf = index < rating && index >= Math.floor(rating);
-
-        if (interactive) {
-          return (
-            <button
-              key={index}
-              onClick={() => handleClick(index)}
-              className="cursor-pointer hover:scale-110 transition-transform"
-              type="button"
-            >
-              <Star
-                className={`${sizeClasses[size]} ${
-                  isFilled
-                    ? "fill-yellow-400 text-yellow-400"
-                    : isHalf
-                      ? "fill-yellow-200 text-yellow-400"
-                      : "fill-none text-gray-300"
-                }`}
-              />
-            </button>
-          );
-        }
-
-        return (
-          <span key={index} className="inline-block">
-            <Star
-              className={`${sizeClasses[size]} ${
-                isFilled
-                  ? "fill-yellow-400 text-yellow-400"
-                  : isHalf
-                    ? "fill-yellow-200 text-yellow-400"
-                    : "fill-none text-gray-300"
-              }`}
-            />
-          </span>
-        );
-      })}
+    <div className="flex items-center gap-1">
+      {[...Array(maxRating)].map((_, index) => (
+        <Star
+          key={index}
+          size={pixelSize}
+          className={index < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+          onClick={() => handleClick(index)}
+        />
+      ))}
     </div>
   );
 }

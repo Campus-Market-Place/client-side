@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { saveProduct, unsaveProduct } from "../services/savedApi";
+import { getSavedProducts, saveProduct, unsaveProduct } from "../services/savedApi";
 
 interface AppContextType {
   savedProducts: Set<string>;
   followedShops: Set<string>;
-  toggleSavedProduct: (productId: string) => void;
+  toggleSavedProduct: (productId: string,  shopId: string) => void;
   toggleFollowShop: (shopId: string) => void;
   isSaved: (productId: string) => boolean;
   isFollowing: (shopId: string) => boolean;
@@ -23,6 +23,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return followed ? new Set(JSON.parse(followed)) : new Set();
   });
 
+  // ✅ Sync with backend API on load
+  useEffect(() => {
+    const fetchSavedFromAPI = async () => {
+      try {
+        const res = await getSavedProducts();
+        // assume API returns array of product objects
+        const ids = res.data.map((p: any) => p.id);
+        setSavedProducts(new Set(ids));
+        localStorage.setItem("savedProducts", JSON.stringify(ids));
+      } catch (err) {
+        console.error("Failed to fetch saved products from API", err);
+      }
+    };
+    fetchSavedFromAPI();
+  }, []);
+
   useEffect(() => {
     localStorage.setItem("savedProducts", JSON.stringify(Array.from(savedProducts)));
   }, [savedProducts]);
@@ -31,7 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("followedShops", JSON.stringify(Array.from(followedShops)));
   }, [followedShops]);
 
-  const toggleSavedProduct = async (productId: string) => {
+  const toggleSavedProduct = async (productId: string, shopId: string) => {
     setSavedProducts((prev) => {
       const next = new Set(prev);
   
@@ -39,7 +55,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         unsaveProduct(productId);   // API call
         next.delete(productId);
       } else {
-        saveProduct(productId);     // API call
+        saveProduct(productId, shopId);     // API call
         next.add(productId);
       }
   

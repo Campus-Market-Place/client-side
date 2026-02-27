@@ -8,14 +8,20 @@ import "slick-carousel/slick/slick-theme.css";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAppContext } from "../contexts/AppContext";
 import { getProductDetails } from "../services/productsApi";
+
+
 import React from "react";
+import { saveProduct, unsaveProduct } from "../services/savedApi";
+import { getReviewsByProduct } from "../services/reviewApi";
 
 
 interface ProductDetailPageProps {
   productId: string;
   onBack: () => void;
   onViewShop: (shopId: string) => void;
-  onWriteReview: (productId: string) => void;
+  //onWriteReview: (productId: string, shopId: string) => void;
+  onWriteReview: (productId: string, shopId: string, productName?: string) => void;
+  
 }
 
 export function ProductDetailPage({
@@ -24,33 +30,51 @@ export function ProductDetailPage({
   onViewShop,
   onWriteReview,
 }: ProductDetailPageProps) {
-  const { isSaved, toggleSavedProduct, isFollowing, toggleFollowShop } =
+  const { isSaved, toggleSavedProduct, isFollowing, } =
     useAppContext();
 
   const [product, setProduct] = useState<any | null>(null);
   const [shop, setShop] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  //const [followingShops, setFollowingShops] = useState<string[]>([]);
+  const [loadingFollow, setLoadingFollow] = useState(false);
+  const [saving, setSaving] = useState(false); 
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  
+
+  //const currentlyFollowing = shop ? followingShops.includes(shop.id) : false;
+  const currentlyFollowing = shop?.isFollowed ?? false;
+
 
   useEffect(() => {
     setLoading(true);
   
-    getProductDetails(productId)
-      .then((fetchedProduct) => {
+    Promise.all([
+      getProductDetails(productId),
+      getReviewsByProduct(productId)
+    ])
+      .then(([fetchedProduct, fetchedReviews]) => {
+  
         console.log("Fetched product:", fetchedProduct);
+        console.log("Fetched reviews:", fetchedReviews);
   
         setProduct(fetchedProduct);
-        setShop(fetchedProduct.shop); // now this works
+        setShop(fetchedProduct.shop);
+        setReviews(fetchedReviews); // ✅ important
+  
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching product details:", err);
+        console.error(err);
         setError(err.message);
         setLoading(false);
       });
+  
   }, [productId]);
   
-
+  
   if (loading) return <div>Loading product...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!product || !shop) return <div>Product not found</div>;
@@ -70,8 +94,32 @@ export function ProductDetailPage({
     }
   };
 
-  const handleSaveProduct = () => {
-    toggleSavedProduct(productId);
+  const handleSaveProduct = async () => {
+    if (saving) return; // prevent double clicks
+    setSaving(true);
+  
+    try {
+      console.log("Toggling save for product:", { productId, shopId: shop.id });
+  
+      if (isSaved(productId)) {
+        // If already saved → call unsave
+        console.log("Un-saving product:", { productId, shopId: shop.id });
+        await unsaveProduct(productId, shop.id); // <-- call DELETE API
+      } else {
+        // If not saved → call save
+        console.log("Saving product:", { productId, shopId: shop.id });
+        await saveProduct(productId, shop.id); // <-- call POST API
+      }
+  
+      // Always toggle local state for UI
+      toggleSavedProduct(productId, shop.id);
+  
+    } catch (err: any) {
+      console.error("Failed to toggle save:", err);
+      alert(err.message || "Could not toggle save. Try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -85,35 +133,37 @@ export function ProductDetailPage({
           <button
             onClick={handleSaveProduct}
             className="p-1 hover:bg-gray-100 rounded-lg"
+            disabled={saving} // optional: prevent click while loading
           >
             <Bookmark
-              className={`w-5 h-5 ${
-                isSaved(productId) ? "fill-blue-600 text-blue-600" : ""
-              }`}
-            />
+                className={`w-5 h-5 ${
+                  isSaved(productId) ? "fill-blue-600 text-blue-600" : ""
+                }`}
+              />
           </button>
         </div>
       </div>
 
       {/* Product Images */}
       <div className="bg-white">
-        <Slider {...sliderSettings}>
-          {product.images?.map((img: any, index: number) => (
-            <div key={index} className="aspect-square bg-gray-100">
-              <ImageWithFallback
-                  src={
-                    product.images?.[0]?.imagePath
-                      ? `https://via.placeholder.com/400x400.png?text=Product+Image`
-                      : "/placeholder-image.png"
-                  }
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-              />
+      <Slider {...sliderSettings}>
+  {product.images?.map((img: any, index: number) => (
+    <div key={index} className="aspect-square bg-gray-100">
+      <ImageWithFallback
+        src={
+          img.imagePath
+            ? img.imagePath.startsWith("http")
+              ? img.imagePath               // already full URL, use as-is
+              : `https://backend-ikou.onrender.com${img.imagePath}` // relative path, prepend backend
+            : "/placeholder-image.png"      // fallback
+        }
+        alt={product.name}
+        className="w-full h-full object-cover"
+      />
+    </div>
+  ))}
+</Slider>
 
-
-            </div>
-          ))}
-        </Slider>
       </div>
 
       {/* Product Info */}
@@ -140,20 +190,9 @@ export function ProductDetailPage({
         <div className="flex items-center justify-between mb-3">
           <div className="flex-1">
             <h3 className="mb-1">{shop.shopName}</h3>
-            <p className="text-sm text-gray-500">
-              {shop.followersCount} followers
-            </p>
           </div>
-          <button
-            onClick={() => toggleFollowShop(shop.id)}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-              isFollowing(shop.id)
-                ? "bg-gray-100 text-gray-700"
-                : "bg-blue-600 text-white"
-            }`}
-          >
-            {isFollowing(shop.id) ? "Following" : "Follow"}
-          </button>
+        
+
         </div>
         <button
           onClick={() => onViewShop(shop.id)}
@@ -166,9 +205,9 @@ export function ProductDetailPage({
       {/* Reviews Section */}
       <div className="bg-white mt-2 p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3>Reviews ({product.ratingCount})</h3>
+          <h3>Reviews ({product.length})</h3>
           <button
-            onClick={() => onWriteReview(productId)}
+             onClick={() => onWriteReview(productId, shop.id, product.name)}
             className="text-sm text-blue-600 hover:underline"
           >
             Write Review
@@ -183,9 +222,9 @@ export function ProductDetailPage({
           </div>
         ) : (
           <div className="space-y-3">
-            {product.reviews?.map((review: any, index: number) => (
-              <ReviewCard key={index} review={review} />
-            ))}
+           {reviews.map((review, index) => (
+  <ReviewCard key={review.id || index} review={review} />
+))}
           </div>
         )}
       </div>

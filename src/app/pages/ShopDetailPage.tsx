@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink, Instagram, Facebook, Calendar, Users, Flag } from "lucide-react";
-import { shops, products, Shop, Product } from "../data/mockData";
-import { ProductCard } from "../components/ProductCard";
 import { EmptyState } from "../components/EmptyState";
 import { ReportShopModal } from "../components/ReportShopModal";
 import { useAppContext } from "../contexts/AppContext";
 import React from "react";
 import { getShopById } from "../services/shopsApi";
+import { ProductCardProduct, Shop } from "../../types/api";
+import { reportShop } from "../services/reportApi";
+import { toggleFollowShopApi } from "../services/followApi";
+import { Productdisplay } from "../components/RatingStars";
 
 interface ShopDetailPageProps {
   shopId: string;
@@ -19,26 +21,36 @@ export function ShopDetailPage({
   onBack,
   onProductSelect,
 }: ShopDetailPageProps) {
-  const { isFollowing, toggleFollowShop } = useAppContext();
+  const { isFollowing, toggleFollowShop: toggleFollowLocal } = useAppContext();
   const [showReportModal, setShowReportModal] = useState(false);
   const [shop, setShop] = useState<Shop | null>(null);
-  const [shopProducts, setShopProducts] = useState<Product[]>([]);
+  const [shopProducts, setShopProducts] = useState<ProductCardProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { //fetch shop details and products when shopId changes
+  useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-      console.log("Fetching shop data for shopId:", shopId);
-  
+
       try {
-        const shopData = await getShopById(shopId);  // <-- fetch shop from API
-        if (!shopData) throw new Error("Shop not found");
+        const shopData = await getShopById(shopId);
         setShop(shopData);
-  
-        const productsData = await getProductsByShopId(shopId); // <-- fetch products from API
-        setShopProducts(productsData);
+
+        // Transform API products to ProductCard format
+        const mappedProducts: ProductCardProduct[] = shopData.products.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          description: "",
+          image: p.images?.[0]?.imagePath || "/placeholder-image.png",
+          shopId: shopData.id,
+          shopName: shopData.shopName,
+          rating: Number(p.ratingAverage ?? 0),     // ✅ map to `rating`
+  reviewCount: Number(p.reviewCount ?? 0),  // ✅ map to `reviewCount`
+        }));
+        setShopProducts(mappedProducts);
+
       } catch (err) {
         console.error(err);
         setError("Failed to load shop data.");
@@ -46,7 +58,7 @@ export function ShopDetailPage({
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, [shopId]);
 
@@ -54,21 +66,43 @@ export function ShopDetailPage({
   if (error) return <div className="p-4 text-red-500">{error}</div>;
   if (!shop) return <div className="p-4">Shop not found</div>;
 
-
-  if (!shop) return null;
-
   const handleContactShop = () => {
-    window.open(shop.telegramLink, "_blank");
+    window.open(`https://t.me/${shop.seller.user.telegramId}`, "_blank");
   };
 
-  const handleReportSubmit = (reason: string, details: string) => {
-    // In a real app, this would send the report to your backend
-    console.log("Report submitted:", { shopId, reason, details });
-    alert("Thank you for your report. Our team will review it shortly.");
-    setShowReportModal(false);
+  const handleFollowClick = async () => {
+    if (!shop) return;
+
+    try {
+      await toggleFollowShopApi(shopId);
+
+      // Update local context
+      toggleFollowLocal(shopId);
+
+      // Update shop followers count locally
+      setShop({
+        ...shop,
+        followersCount: isFollowing(shopId)
+          ? shop.followersCount - 1
+          : shop.followersCount + 1,
+      });
+
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
-  const yearsActive = new Date().getFullYear() - new Date(shop.createdDate).getFullYear();
+  const handleReportSubmit = async (reason: string) => {
+    try {
+      await reportShop(shopId, { reason });
+      alert("Thank you for your report. Our team will review it shortly.");
+      setShowReportModal(false);
+    } catch (err: any) {
+      alert(`Failed to submit report: ${err.message}`);
+    }
+  };
+
+  const yearsActive = 0; // optional
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,14 +131,14 @@ export function ShopDetailPage({
       <div className="bg-white p-4 border-b border-gray-200">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h2 className="mb-2">{shop.name}</h2>
-            <p className="text-sm text-gray-700 mb-3">{shop.description}</p>
+            <h2 className="mb-2">{shop.shopName}</h2>
+            <p className="text-sm text-gray-700 mb-3">{shop.bio}</p>
 
             {/* Trust Indicators */}
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
-                <span>{shop.followers} followers</span>
+                <span>{shop.followersCount} followers</span>
               </div>
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
@@ -117,11 +151,11 @@ export function ShopDetailPage({
         </div>
 
         {/* Social Media Links */}
-        {(shop.socialMedia.instagram || shop.socialMedia.facebook) && (
+        {(shop.seller.instagram || shop.seller.tiktok) && (
           <div className="flex gap-2 mb-4">
-            {shop.socialMedia.instagram && (
+            {shop.seller.instagram && (
               <a
-                href={`https://instagram.com/${shop.socialMedia.instagram}`}
+                href={`https://instagram.com/${shop.seller.instagram}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200 transition-colors"
@@ -130,15 +164,15 @@ export function ShopDetailPage({
                 Instagram
               </a>
             )}
-            {shop.socialMedia.facebook && (
+            {shop.seller.tiktok && (
               <a
-                href={`https://facebook.com/${shop.socialMedia.facebook}`}
+                href={`https://tiktok.com/@${shop.seller.tiktok}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200 transition-colors"
               >
                 <Facebook className="w-4 h-4" />
-                Facebook
+                Tiktok
               </a>
             )}
           </div>
@@ -147,7 +181,7 @@ export function ShopDetailPage({
         {/* Action Buttons */}
         <div className="flex gap-2">
           <button
-            onClick={() => toggleFollowShop(shopId)}
+            onClick={handleFollowClick}
             className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
               isFollowing(shopId)
                 ? "bg-gray-100 text-gray-700"
@@ -178,7 +212,7 @@ export function ShopDetailPage({
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {shopProducts.map((product) => (
-              <ProductCard
+              <Productdisplay
                 key={product.id}
                 product={product}
                 onClick={() => onProductSelect(product.id)}
@@ -191,18 +225,11 @@ export function ShopDetailPage({
       {/* Report Modal */}
       {showReportModal && (
         <ReportShopModal
-          shopName={shop.name}
+          shopName={shop.shopName}
           onClose={() => setShowReportModal(false)}
           onSubmit={handleReportSubmit}
         />
       )}
     </div>
   );
-}
-
-function getProductsByShopId(shopId: string): Promise<Product[]> { //mock API function to get products by shop ID
-  return new Promise((resolve) => {
-    const productsData = products.filter((product) => product.shopId === shopId);
-    resolve(productsData);
-  });
 }

@@ -6,32 +6,30 @@ import { useAppContext } from "../contexts/AppContext";
 import React, { useEffect } from "react";
 import { getCategories } from "../services/categoriesApi";
 
-interface HomePageProps {    //tyscript interface for the props that HomePage component will receive
+interface HomePageProps {
   onCategorySelect: (categoryId: string) => void;
   onSearch: (query: string) => void;
   onViewSaved: () => void;
 }
 
 export function HomePage({ onCategorySelect, onSearch, onViewSaved }: HomePageProps) {
-  const { savedProducts } = useAppContext();
+  const { savedProducts} = useAppContext();
   const [categoriesList, setCategoriesList] = React.useState<Category[]>([]);
 
-  // Removed redundant redeclaration of categoriesList
-  
   const handleSearch = (query: string) => {
     if (query.trim()) {
       onSearch(query);
     }
   };
 
-  React.useEffect(() => {
-  getCategories()
-    .then((data) => {
-      setCategoriesList(data); // data must be an array here
-      console.log("Categories fetched:", data);
-    })
-    .catch(err => console.error(err)); // always good to handle errors
-}, []);
+  useEffect(() => {
+    getCategories()
+      .then((data) => {
+        setCategoriesList(data);
+        console.log("Categories fetched:", data);
+      })
+      .catch((err) => console.error(err));
+  }, []);
 
 
   return (
@@ -41,8 +39,10 @@ export function HomePage({ onCategorySelect, onSearch, onViewSaved }: HomePagePr
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1>Campus Marketplace</h1>
+
+            {/* Bookmark badge */}
             <button
-              onClick={onViewSaved}
+              onClick={onViewSaved} // keeps existing behavior to view saved products
               className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
               title="Saved products"
             >
@@ -62,12 +62,13 @@ export function HomePage({ onCategorySelect, onSearch, onViewSaved }: HomePagePr
       <div className="p-4">
         <h2 className="mb-4">Browse by Category</h2>
         <div className="grid grid-cols-2 gap-3">
-        
           {categoriesList.map((category) => (
             <CategoryCard
               key={category.id}
               category={category}
               onClick={() => onCategorySelect(category.id)}
+              // Optionally, you can add a toggle bookmark inside each category card
+              // e.g., onBookmarkClick={() => handleBookmarkClick(category.id, category.shopId)}
             />
           ))}
         </div>

@@ -1,23 +1,45 @@
-import { Star } from 'lucide-react';
+// src/components/ProductCard.tsx
+import React from "react";
+import { StarRating } from "./StarRating";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { ProductCardProduct } from "../../types/api"; // <- use the correct type
 
-interface RatingStarsProps {
-  rating: number;
-  maxRating?: number;
-  size?: number;
-  showNumber?: boolean;
+interface ProductCardP {
+  product: ProductCardProduct;
+  onClick: () => void;
+  onSave?: () => void; // optional save button callback
 }
 
-export function RatingStars({ rating, maxRating = 5, size = 16, showNumber = false }: RatingStarsProps) {
+export function Productdisplay({ product, onClick }: ProductCardP) {
+ // console.log("Product rating in card:", product.ratingAverage);
   return (
-    <div className="flex items-center gap-1">
-      {[...Array(maxRating)].map((_, index) => (
-        <Star
-          key={index}
-          size={size}
-          className={index < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+    <div
+      onClick={onClick}
+      className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow w-full text-left cursor-pointer"
+    >
+      <div className="aspect-square bg-gray-100 overflow-hidden">
+        <ImageWithFallback
+          src={product.image}
+          alt={product.name}
+          className="w-full h-full object-cover"
         />
-      ))}
-      {showNumber && <span className="text-sm text-gray-600 ml-1">({rating.toFixed(1)})</span>}
+      </div>
+      <div className="p-3">
+        <h3 className="line-clamp-1 mb-1">{product.name}</h3>
+        <p className="text-sm text-gray-500 mb-2">{product.shopName}</p>
+        <div className="flex items-center gap-1 mb-2">
+          <StarRating rating={product.rating}  size="sm" />
+          {/*
+<span className="text-xs text-gray-500">
+  ({product.ratingCount || 0})
+</span>
+*/}
+        </div>
+        <p className="text-blue-600">${product.price}</p>
+      </div>
     </div>
   );
 }
+
+
+//ratingAverage   ratingAverage}

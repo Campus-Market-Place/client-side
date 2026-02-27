@@ -26,6 +26,8 @@ export function CategoryProductsPage({
   const [productsList, setProductsList] = useState<Product[]>([]);
   //const categoryProducts = products.filter((p) => p.categoryId === categoryId);
 
+  
+
   const sortedProducts = [...productsList].sort((a, b) => { //sort products based on sortBy state
     if (sortBy === "price-low") return a.price - b.price;
     if (sortBy === "price-high") return b.price - a.price;
@@ -36,12 +38,18 @@ export function CategoryProductsPage({
   React.useEffect(() => {
     getProductsByCategory(categoryId)
       .then((data) => {
-        setProductsList(data);
+        const mapped = data.map((p: any) => ({
+          ...p,
+          image: p.images?.[0]?.imagePath || "",  // ✅ map first image
+          shopId: p.shop?.id || p.shopId || p.shop_id, // ✅ make sure shopId exists
+        }));
+        setProductsList(mapped);
       })
       .catch((err) => {
         console.error("Error fetching products:", err);
       });
   }, [categoryId]);
+
 
   return (
     <div className="min-h-screen bg-gray-50">

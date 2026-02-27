@@ -1,22 +1,18 @@
-// src/app/services/shopsApi.ts
-import { shops } from "../data/mockData";
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL;
+const TOKEN = (import.meta as any).env.VITE_USER_TOKEN;
 
-const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
+export async function getShopById(shopId: string) {
+  const response = await fetch(`${API_BASE_URL}/shop/${shopId}`, {
+    headers: {
+      Authorization: `Bearer ${TOKEN}`,
+    },
+  });
 
-// Get all shops
-export const getShops = async () => {
-  await wait(200); // simulate network delay
-  return shops;
-};
+  if (!response.ok) {
+    throw new Error("Failed to fetch shop");
+  }
 
-// Get single shop by ID
-export const getShopById = async (id: string) => {
-  await wait(200);
-  return shops.find(s => s.id === id);
-};
+  const json = await response.json();
 
-// Optional: Get shops by follower count (example of a filter)
-export const getShopsByFollowers = async (minFollowers: number) => {
-  await wait(200);
-  return shops.filter(s => s.followers >= minFollowers);
-};
+  return json.data.shop; // VERY IMPORTANT
+}

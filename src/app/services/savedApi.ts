@@ -11,11 +11,16 @@ export async function saveProduct(productId: string, shopId: string) {
     body: JSON.stringify({ productId, shopId }),
   });
 
+  // Read JSON **once**
+  const data = await response.json();
+  console.log("Save API response:", data);
+
+  // Throw error only if response not ok
   if (!response.ok) {
-    throw new Error("Failed to save product");
+    throw new Error(data.message || "Failed to save product");
   }
 
-  return response.json();
+  return data;
 }
 
 export async function getSavedProducts() {
@@ -32,14 +37,14 @@ export async function getSavedProducts() {
   return response.json(); // array of saved products
 }
 
-export async function unsaveProduct(productId: string) {
+export async function unsaveProduct(productId: string, shopId: string) {
   const response = await fetch(`${API_BASE_URL}/save_product/`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${TOKEN}`,
+      Authorization: `Bearer ${TOKEN}`,
     },
-    body: JSON.stringify({ productId }),
+    body: JSON.stringify({ productId, shopId }), // include shopId too
   });
 
   if (!response.ok) {

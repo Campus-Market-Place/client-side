@@ -3,6 +3,7 @@ import { ArrowLeft, Search, SlidersHorizontal } from "lucide-react";
 import { products, categories } from "../data/mockData";
 import { ProductCard } from "../components/ProductCard";
 import { EmptyState } from "../components/EmptyState";
+import React from "react";
 
 interface SearchResultsPageProps {
   initialQuery?: string;

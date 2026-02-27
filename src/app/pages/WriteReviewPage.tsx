@@ -1,56 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
-import { products } from "../data/mockData";
+import React from "react";
 import { StarRating } from "../components/StarRating";
+import { submitReview } from "../services/reviewApi";
+import { ReviewRequestBody } from "../../types/api";
 
 interface WriteReviewPageProps {
   productId: string;
+  shopId: string; // required to call API
+  productName?: string; // ✅ now optional
   onBack: () => void;
 }
 
-export function WriteReviewPage({ productId, onBack }: WriteReviewPageProps) {
+export function WriteReviewPage({ productId, shopId, productName, onBack }: WriteReviewPageProps) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const product = products.find((p) => p.id === productId);
-
-  if (!product) return null;
-
   const handleSubmit = async () => {
-    if (rating === 0) {
-      alert("Please select a rating");
-      return;
-    }
+    if (rating === 0) return alert("Please select a rating");
 
     setIsSubmitting(true);
+    const body: ReviewRequestBody = { rating, comment };
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    alert("Review submitted! Thank you for your feedback.");
-    setIsSubmitting(false);
-    onBack();
+    try {
+      await submitReview(shopId, productId, body);
+      alert("Review submitted! Thank you for your feedback.");
+      onBack();
+    } catch (err: any) {
+      alert(`Failed to submit review: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="px-4 py-3">
-          <div className="flex items-center gap-3">
-            <button onClick={onBack} className="p-1 hover:bg-gray-100 rounded-lg">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-lg">Write a Review</h1>
-          </div>
-        </div>
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-4 py-3 flex items-center gap-3">
+        <button onClick={onBack} className="p-1 hover:bg-gray-100 rounded-lg">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <h1 className="text-lg">Write a Review</h1>
       </div>
 
       {/* Product Info */}
       <div className="bg-white p-4 border-b border-gray-200">
         <p className="text-sm text-gray-500 mb-1">Reviewing</p>
-        <h3>{product.name}</h3>
+        <h3>{productName}</h3>
       </div>
 
       {/* Review Form */}
@@ -58,28 +55,18 @@ export function WriteReviewPage({ productId, onBack }: WriteReviewPageProps) {
         <div className="mb-6">
           <label className="block mb-3 text-sm">Your Rating *</label>
           <div className="flex justify-center">
-            <StarRating
-              rating={rating}
-              interactive
-              onRatingChange={setRating}
-              size="lg"
-            />
+            <StarRating rating={rating} interactive onRatingChange={setRating} size={23} />
           </div>
           {rating > 0 && (
             <p className="text-center mt-2 text-sm text-gray-600">
-              {rating === 5 && "Excellent!"}
-              {rating === 4 && "Good"}
-              {rating === 3 && "Average"}
-              {rating === 2 && "Below Average"}
-              {rating === 1 && "Poor"}
+              {["Poor", "Below Average", "Average", "Good", "Excellent"][rating - 1]}
             </p>
           )}
         </div>
 
         <div className="mb-6">
           <label className="block mb-2 text-sm">
-            Your Review
-            <span className="text-gray-500 ml-1">(optional)</span>
+            Your Review <span className="text-gray-500 ml-1">(optional)</span>
           </label>
           <textarea
             value={comment}
@@ -88,9 +75,7 @@ export function WriteReviewPage({ productId, onBack }: WriteReviewPageProps) {
             className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             maxLength={300}
           />
-          <p className="text-xs text-gray-500 mt-1 text-right">
-            {comment.length}/300
-          </p>
+          <p className="text-xs text-gray-500 mt-1 text-right">{comment.length}/300</p>
         </div>
 
         <button

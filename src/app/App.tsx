@@ -14,7 +14,7 @@ type Page =
   | { type: "category"; categoryId: string }
   | { type: "product"; productId: string }
   | { type: "shop"; shopId: string }
-  | { type: "review"; productId: string }
+  | { type: "review"; productId: string; shopId: string; productName?: string } // ✅ update
   | { type: "saved" }
   | { type: "search"; query: string };
 
@@ -63,8 +63,8 @@ export default function App() {
             productId={currentPage.productId}
             onBack={goBack}
             onViewShop={(shopId) => navigateTo({ type: "shop", shopId })}
-            onWriteReview={(productId) =>
-              navigateTo({ type: "review", productId })
+            onWriteReview={(productId, shopId) =>
+              navigateTo({ type: "review", productId, shopId }) // ✅ pass shopId
             }
           />
         )}
@@ -80,7 +80,12 @@ export default function App() {
         )}
 
         {currentPage.type === "review" && (
-          <WriteReviewPage productId={currentPage.productId} onBack={goBack} />
+          <WriteReviewPage
+            productId={currentPage.productId}
+            shopId={currentPage.shopId} // ✅ now defined
+            productName={currentPage.productName || ""} // fallback empty string
+            onBack={goBack}
+          />
         )}
 
         {currentPage.type === "saved" && (
