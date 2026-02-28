@@ -22,7 +22,23 @@ type Page =
 export default function App() {
 
   useEffect(() => {
-    saveTokenFromUrl();
+
+    console.log("Full URL:", window.location.href);
+  
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+  
+    console.log("Token from URL:", token);
+  
+    if (token) {
+      localStorage.setItem("token", token);
+      console.log("Token saved successfully");
+    } else {
+      console.error("No token found in URL");
+    }
+  
+    console.log("Token in localStorage:", localStorage.getItem("token"));
+  
   }, []);
     
   const [currentPage, setCurrentPage] = useState<Page>({ type: "home" });
