@@ -1,25 +1,21 @@
-const API_BASE_URL = "https://backend-ikou.onrender.com/api";
+export function getToken() {
+  return localStorage.getItem("token");
+}
 
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
 
-  const token = localStorage.getItem("token");
+  const token = getToken();
 
   if (!token) {
-    throw new Error("No auth token found. Please login via Telegram bot.");
+    throw new Error("No auth token found.");
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  return fetch(`https://backend-ikou.onrender.com/api${endpoint}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      ...(options.headers || {})
+      ...(options.headers || {}),
     },
-    ...options,
   });
-
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
-  }
-
-  return response.json();
 }
