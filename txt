@@ -1,0 +1,5 @@
+-----GET /api/products/category/{categoryId} add fields like (ratingAverage
+ratingCount)
+
+----api/products/shop/shopID lemilew field lay createdAt add this field
+---------GET /api/products/details/{productId}  add isFollowing field which give true/false

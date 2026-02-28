@@ -30,7 +30,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
         <div className="flex items-center gap-1 mb-2">
           <StarRating rating={product.ratingAverage}  size="sm" />
           <span className="text-xs text-gray-500">
-            ({product.ratingCount || 0})
+            ({product.reviewCount || 0})
           </span>
         </div>
         <p className="text-blue-600">${product.price}</p>

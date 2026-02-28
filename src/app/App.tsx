@@ -21,10 +21,9 @@ type Page =
 
 export default function App() {
 
-    // ✅ Read token from URL when app loads
-    useEffect(() => {
-      saveTokenFromUrl();
-    }, []);
+  useEffect(() => {
+    saveTokenFromUrl();
+  }, []);
     
   const [currentPage, setCurrentPage] = useState<Page>({ type: "home" });
   const [pageHistory, setPageHistory] = useState<Page[]>([{ type: "home" }]);
